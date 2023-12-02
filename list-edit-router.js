@@ -1,36 +1,30 @@
+// list-edit-router.js
 const express = require('express');
 const listEditRouter = express.Router();
+
 // Importa la lista de tareas
 const tasks = require('./tasks');
 
-// Ruta para crear una tarea
-listEditRouter.post('/create', (req, res) => {
-    try {
-        // Obtén la información de la nueva tarea desde el cuerpo de la solicitud
-        const { description } = req.body;
+// Middleware para validar solicitudes POST y PUT
+const validateTaskRequest = (req, res, next) => {
+    if (req.method === 'POST' || req.method === 'PUT') {
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).json({ error: 'El cuerpo de la solicitud no puede estar vacío' });
+        }
 
-        // Genera un nuevo ID (puedes usar una biblioteca como `uuid` para esto)
-        const newTaskId = Math.random().toString(36).substring(7);
+        const { isCompleted, description } = req.body;
 
-        // Crea la nueva tarea
-        const newTask = {
-            id: newTaskId,
-            isCompleted: false,
-            description: description,
-        };
+        if (req.method === 'POST' && (isCompleted === undefined || description === undefined)) {
+            return res.status(400).json({ error: 'Solicitud POST inválida. Faltan atributos necesarios' });
+        }
 
-        // Agrega la nueva tarea a la lista de tareas
-        tasks.push(newTask);
-
-        // Responde con la nueva tarea creada
-        res.json(newTask);
-    } catch (error) {
-        // Maneja errores en caso de que haya algún problema en la creación
-        console.error(error);
-        res.status(500).json({ error: 'Error al crear la tarea' });
+        if (req.method === 'PUT' && (isCompleted !== undefined && typeof isCompleted !== 'boolean')) {
+            return res.status(400).json({ error: 'Solicitud PUT inválida. El atributo isCompleted debe ser un booleano' });
+        }
     }
-});
 
+    next();
+};
 
 // Ruta para eliminar una tarea
 listEditRouter.delete('/delete/:taskId', (req, res) => {
@@ -58,8 +52,33 @@ listEditRouter.delete('/delete/:taskId', (req, res) => {
     }
 });
 
+// Ruta para agregar una tarea
+listEditRouter.post('/create', validateTaskRequest, (req, res) => {
+    try {
+        // Obtén la información de la nueva tarea desde el cuerpo de la solicitud
+        const { isCompleted, description } = req.body;
+
+        // Crea una nueva tarea
+        const newTask = {
+            id: Math.random().toString(36).substring(7), // Genera un ID aleatorio
+            isCompleted: isCompleted || false,
+            description: description || '',
+        };
+
+        // Agrega la nueva tarea a la lista
+        tasks.push(newTask);
+
+        // Responde con la nueva tarea creada
+        res.json(newTask);
+    } catch (error) {
+        // Maneja errores en caso de que haya algún problema en la creación
+        console.error(error);
+        res.status(500).json({ error: 'Error al crear la tarea' });
+    }
+});
+
 // Ruta para actualizar una tarea
-listEditRouter.put('/update/:taskId', (req, res) => {
+listEditRouter.put('/update/:taskId', validateTaskRequest, (req, res) => {
     try {
         // Obtén el ID de la tarea a actualizar desde los parámetros de la URL
         const taskId = req.params.taskId;
@@ -92,3 +111,4 @@ listEditRouter.put('/update/:taskId', (req, res) => {
 });
 
 module.exports = listEditRouter;
+

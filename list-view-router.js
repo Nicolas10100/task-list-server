@@ -3,6 +3,11 @@ const listViewRouter = express.Router();
 // Importa la lista de tareas
 const tasks = require('./tasks');
 
+// Ruta para listar todas las tareas
+listViewRouter.get('/tasks', (req, res) => {
+    res.json(tasks);
+});
+
 // Ruta para obtener tareas completas
 listViewRouter.get('/completed', (req, res) => {
     const completedTasks = tasks.filter(task => task.isCompleted);
