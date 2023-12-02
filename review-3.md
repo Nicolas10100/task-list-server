@@ -19,6 +19,8 @@ completadas, borrar tareas y ver una lista de todas sus tareas. Esta aplicación
    tener una
    visión general de todas sus tareas pendientes y a planificar su tiempo de manera eficiente.
 
+   Se agrega la autenticacion, para proteger la informacion.
+
 | Estas funcionalidades son importantes porque ayudan a los usuarios a gestionar su tiempo y sus tareas de manera más
 eficiente. Al tener todas sus tareas en un solo lugar, los usuarios pueden organizar mejor su tiempo y priorizar sus
 tareas de manera más efectiva.
