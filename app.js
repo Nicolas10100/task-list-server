@@ -1,33 +1,60 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const listViewRouter = require('./list-view-router');
-const listEditRouter = require('./list-edit-router');
+const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
+
+dotenv.config(); // Cargar variables de entorno desde un archivo .env
 
 const app = express();
 const port = 3000;
 
-// Middleware a nivel de aplicación para gestionar métodos HTTP válidos
-const validateHTTPMethod = (req, res, next) => {
-    const validMethods = ['GET', 'POST', 'PUT', 'DELETE'];
+// Usuarios predefinidos para la autenticación (esto podría venir de una base de datos en un entorno de producción)
+const users = [
+    { username: 'user1', password: 'password1' },
+    { username: 'user2', password: 'password2' },
+    // Agrega más usuarios según sea necesario
+];
 
-    if (!validMethods.includes(req.method)) {
-        return res.status(400).json({ error: 'Método HTTP no válido' });
+app.use(express.json());
+
+// Ruta para autenticación (generación de token JWT)
+app.post('/login', (req, res) => {
+    const { username, password } = req.body;
+
+    // Buscar el usuario en la lista
+    const user = users.find(user => user.username === username && user.password === password);
+
+    if (!user) {
+        return res.status(401).json({ error: 'Credenciales inválidas' });
     }
 
-    next();
-};
+    // Crear un token JWT
+    const token = jwt.sign({ username: user.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-// Middleware para analizar el cuerpo de las solicitudes
-app.use(bodyParser.json());
+    res.json({ token });
+});
 
-// Middleware a nivel de aplicación para gestionar métodos HTTP válidos
-app.use(validateHTTPMethod);
+// Ruta protegida que verifica el token JWT
+app.get('/protected', authenticateToken, (req, res) => {
+    res.json({ message: 'Ruta protegida, acceso concedido' });
+});
 
-// Usa los routers en rutas específicas
-app.use('/list-view', listViewRouter);
-app.use('/list-edit', listEditRouter);
+// Middleware para verificar el token JWT en el encabezado de autorización
+function authenticateToken(req, res, next) {
+    const token = req.header('Authorization');
 
+    if (!token) {
+        return res.status(401).json({ error: 'Token no proporcionado' });
+    }
 
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Token inválido' });
+        }
+
+        req.user = user;
+        next();
+    });
+}
 
 app.listen(port, () => {
     console.log(`Servidor iniciado en http://localhost:${port}`);
